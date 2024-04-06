@@ -40,13 +40,11 @@ const ProjectLayout = () => {
     // fetch projects
     await fetchGroupTree(groupID, 0, pvtAccessToken)
       .then((response) => {
-        console.log(response);
         setTreeObject(response);
         setProjectsLoaded(true);
         setLoading(false);
       })
       .catch((err) => {
-        console.log("hERE");
         console.error(err);
         setLoading(true);
         setProjectsLoaded(false);
@@ -118,8 +116,6 @@ const ProjectLayout = () => {
 
   const handleMoveProject = async (e) => {
     e.preventDefault();
-
-    console.log("Move Project");
     setMoving(true);
 
     if (!projectID) {
@@ -138,7 +134,6 @@ const ProjectLayout = () => {
 
     moveProject(projectID, targetGroupID, pvtAccessToken)
       .then(async (response) => {
-        console.log(response);
         setMoving(false);
         setProjectID("");
         setTargetGroupID("");
@@ -156,7 +151,6 @@ const ProjectLayout = () => {
   };
 
   const moveProject = async (projectId, targetGroupId, pvtAccessToken) => {
-    console.log(projectID, targetGroupID, pvtAccessToken);
     // first get the target group namespace
     try {
       const targetGroupData = await axios.get(
@@ -167,7 +161,6 @@ const ProjectLayout = () => {
           },
         }
       );
-      console.log(targetGroupData.data.full_path);
 
       if (targetGroupData.data.full_path) {
         try {
