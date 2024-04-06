@@ -1,19 +1,94 @@
 import { useEffect, useState } from "react";
 import ProjectsList from "./ProjectsList";
+import axios from "axios";
 
 const ProjectLayout = () => {
   const [groupID, setGroupID] = useState("");
-  const [getProjects, setGetProjects] = useState(false);
   const [projectsLoaded, setProjectsLoaded] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleGetProjects = (e) => {
+  const handleGetProjects = async (e) => {
     e.preventDefault();
-    setGetProjects(true);
+    setLoading(true);
+
+    // fetch projects
+    await fetchGroupTree(groupID, 0)
+      .then((response) => {
+        console.log(response);
+        setTreeObject(response);
+        setProjectsLoaded(true);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        setLoading(false);
+      });
   };
 
-  useEffect(() => {
-    console.log("projectsLoaded ==>", projectsLoaded);
-  }, [projectsLoaded]);
+  const [treeObject, setTreeObject] = useState(null);
+  const [error, setError] = useState(null);
+
+  const fetchGroupTree = async (groupId, level) => {
+    try {
+      const groupData = await axios.get(
+        `https://gitlab.com/api/v4/groups/${groupId}`,
+        {
+          headers: {
+            "PRIVATE-TOKEN": "glpat-J7muddu6BuQkVApMDCVx",
+          },
+        }
+      );
+
+      const groupInfo = {
+        name: groupData.data.name,
+        id: groupData.data.id,
+        groups: [],
+        projects: [],
+        level: level,
+      };
+
+      const subgroupData = await axios.get(
+        `https://gitlab.com/api/v4/groups/${groupId}/subgroups`,
+        {
+          headers: {
+            "PRIVATE-TOKEN": "glpat-J7muddu6BuQkVApMDCVx",
+          },
+        }
+      );
+
+      if (subgroupData.data.length > 0) {
+        const subgroups = await Promise.all(
+          subgroupData.data.map(async (subgroup) => {
+            return fetchGroupTree(subgroup.id, level + 1);
+          })
+        );
+
+        groupInfo.groups = subgroups;
+      }
+
+      const projectData = await axios.get(
+        `https://gitlab.com/api/v4/groups/${groupId}/projects`,
+        {
+          headers: {
+            "PRIVATE-TOKEN": "glpat-J7muddu6BuQkVApMDCVx",
+          },
+        }
+      );
+
+      if (projectData.data.length > 0) {
+        groupInfo.projects = projectData.data.map((project) => ({
+          name: project.name,
+          id: project.id,
+        }));
+      }
+
+      return groupInfo;
+    } catch (error) {
+      setError("Error fetching GitLab Projects. Please try again...");
+      setTreeObject(null);
+      console.error("Error fetching GitLab group tree:", error);
+    }
+  };
 
   return (
     <section className="my-6">
@@ -37,24 +112,34 @@ const ProjectLayout = () => {
           />
           <button
             className={`bg-blue-700 text-white p-2 rounded-md ml-2 ${
-              getProjects && !projectsLoaded && "cursor-not-allowed bg-blue-500"
+              loading && "cursor-not-allowed bg-blue-500"
             }`}
             onClick={handleGetProjects}
-            disabled={getProjects && !projectsLoaded}
+            disabled={loading}
           >
             Fetch Projects
           </button>
         </form>
       </div>
 
-      {getProjects ? (
-        <ProjectsList
-          rootGroupId={groupID}
-          setProjectsLoaded={setProjectsLoaded}
-        />
-      ) : (
-        <div className="w-full flex bg-white rounded-md p-10 shadow-md">
-          <h1>Enter Your Group ID...</h1>
+      {projectsLoaded && treeObject && !loading && (
+        <ProjectsList treeData={treeObject} />
+      )}
+      {error && !loading && !projectsLoaded && (
+        <div className="w-full flex bg-white rounded-md p-8 shadow-md">
+          <p className="text-red-500 text-center bg-orange-100 py-1 px-2 rounded-sm">
+            {error}
+          </p>
+        </div>
+      )}
+      {loading && (
+        <div className="w-full flex bg-white rounded-md p-8 shadow-md">
+          <h1>Loading Projects...</h1>
+        </div>
+      )}
+      {!loading && !projectsLoaded && !error && (
+        <div className="w-full flex bg-white rounded-md p-8 shadow-md">
+          <h1>Enter Group ID and Click Fetch Projects</h1>
         </div>
       )}
     </section>
