@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { BsGitlab } from "react-icons/bs";
 import { TbClipboardCopy } from "react-icons/tb";
 import { HiMiniCodeBracketSquare } from "react-icons/hi2";
@@ -11,7 +11,6 @@ const ProjectsList = ({ treeData }) => {
   //   const [copiedText, setCopiedText] = useState("");
 
   const [openGroups, setOpenGroups] = useState([]);
-  const [error, setError] = useState(null);
 
   const toggleGroup = (groupId) => {
     if (openGroups.includes(groupId)) {
@@ -90,7 +89,6 @@ const ProjectsList = ({ treeData }) => {
       <div className="w-full">
         {treeData !== null ? renderTree(treeData) : <h1>Loading...</h1>}
       </div>
-      {error && <h1>{error}</h1>}
     </div>
   );
 };

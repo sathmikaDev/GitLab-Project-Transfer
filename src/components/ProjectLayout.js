@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import ProjectsList from "./ProjectsList";
 import axios from "axios";
 import { ThreeDots } from "react-loader-spinner";
@@ -11,7 +11,6 @@ const ProjectLayout = () => {
   const [projectsLoaded, setProjectsLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [treeObject, setTreeObject] = useState(null);
-  const [error, setError] = useState(true);
 
   // where to where
   const [projectID, setProjectID] = useState("");
@@ -134,15 +133,22 @@ const ProjectLayout = () => {
 
     moveProject(projectID, targetGroupID, pvtAccessToken)
       .then(async (response) => {
+        if (response.status === 200) {
+          await fetchGroupTree(groupID, 0, pvtAccessToken)
+            .then((response) => {
+              setTreeObject(response);
+              setProjectsLoaded(true);
+              setLoading(false);
+            })
+            .catch((err) => {
+              console.error(err);
+              setLoading(true);
+              setProjectsLoaded(false);
+            });
+        }
         setMoving(false);
         setProjectID("");
         setTargetGroupID("");
-
-        if (!error) {
-          toast.success("Project Moved Successfully!", {
-            position: "top-center",
-          });
-        }
       })
       .catch((err) => {
         console.error(err);
@@ -178,9 +184,13 @@ const ProjectLayout = () => {
               },
             }
           );
+
+          toast.success("Project moved Successfully!", {
+            position: "top-center",
+          });
+
           return response;
         } catch (error) {
-          setError(true);
           console.error("Error moving project:", error);
           toast.error("Error moving project!", {
             position: "top-center",
@@ -188,7 +198,6 @@ const ProjectLayout = () => {
         }
       }
     } catch (err) {
-      setError(true);
       console.error(err);
       toast.error("Error moving project!", {
         position: "top-center",
@@ -203,7 +212,8 @@ const ProjectLayout = () => {
           First, Let's Bring your GitLab Projects Here...
         </h1>
         <p className="text-center">
-          Enter Your Root Level Group ID, We'll take care of Rest using REST😉
+          Enter Your Root Level Group ID, We'll take care of the Rest using
+          REST😉
         </p>
       </div>
 
